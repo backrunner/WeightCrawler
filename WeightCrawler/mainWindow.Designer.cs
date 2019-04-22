@@ -46,9 +46,8 @@
             this.btn_start = new System.Windows.Forms.Button();
             this.btn_stop = new System.Windows.Forms.Button();
             this.progress_total = new System.Windows.Forms.ProgressBar();
-            this.txt_count = new System.Windows.Forms.TextBox();
-            this.button1 = new System.Windows.Forms.Button();
-            this.button2 = new System.Windows.Forms.Button();
+            this.tb_count = new System.Windows.Forms.TextBox();
+            this.btn_export = new System.Windows.Forms.Button();
             this.label2 = new System.Windows.Forms.Label();
             this.rb_output = new System.Windows.Forms.RichTextBox();
             this.btn_import = new System.Windows.Forms.Button();
@@ -61,7 +60,7 @@
             this.lbl_domainFile.Name = "lbl_domainFile";
             this.lbl_domainFile.Size = new System.Drawing.Size(53, 12);
             this.lbl_domainFile.TabIndex = 0;
-            this.lbl_domainFile.Text = "域名文件";
+            this.lbl_domainFile.Text = "导入文件";
             // 
             // tb_file
             // 
@@ -184,6 +183,7 @@
             // 
             // btn_start
             // 
+            this.btn_start.Enabled = false;
             this.btn_start.Location = new System.Drawing.Point(395, 71);
             this.btn_start.Name = "btn_start";
             this.btn_start.Size = new System.Drawing.Size(75, 23);
@@ -194,12 +194,14 @@
             // 
             // btn_stop
             // 
+            this.btn_stop.Enabled = false;
             this.btn_stop.Location = new System.Drawing.Point(476, 71);
             this.btn_stop.Name = "btn_stop";
             this.btn_stop.Size = new System.Drawing.Size(75, 23);
             this.btn_stop.TabIndex = 8;
             this.btn_stop.Text = "停止";
             this.btn_stop.UseVisualStyleBackColor = true;
+            this.btn_stop.Click += new System.EventHandler(this.Btn_stop_Click);
             // 
             // progress_total
             // 
@@ -208,31 +210,23 @@
             this.progress_total.Size = new System.Drawing.Size(610, 23);
             this.progress_total.TabIndex = 9;
             // 
-            // txt_count
+            // tb_count
             // 
-            this.txt_count.Location = new System.Drawing.Point(557, 71);
-            this.txt_count.Name = "txt_count";
-            this.txt_count.ReadOnly = true;
-            this.txt_count.Size = new System.Drawing.Size(65, 21);
-            this.txt_count.TabIndex = 10;
+            this.tb_count.Location = new System.Drawing.Point(557, 71);
+            this.tb_count.Name = "tb_count";
+            this.tb_count.ReadOnly = true;
+            this.tb_count.Size = new System.Drawing.Size(65, 21);
+            this.tb_count.TabIndex = 10;
             // 
-            // button1
+            // btn_export
             // 
-            this.button1.Location = new System.Drawing.Point(395, 100);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(75, 23);
-            this.button1.TabIndex = 11;
-            this.button1.Text = "导出结果";
-            this.button1.UseVisualStyleBackColor = true;
-            // 
-            // button2
-            // 
-            this.button2.Location = new System.Drawing.Point(476, 100);
-            this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(75, 23);
-            this.button2.TabIndex = 12;
-            this.button2.Text = "导出日志";
-            this.button2.UseVisualStyleBackColor = true;
+            this.btn_export.Enabled = false;
+            this.btn_export.Location = new System.Drawing.Point(395, 100);
+            this.btn_export.Name = "btn_export";
+            this.btn_export.Size = new System.Drawing.Size(75, 23);
+            this.btn_export.TabIndex = 11;
+            this.btn_export.Text = "导出结果";
+            this.btn_export.UseVisualStyleBackColor = true;
             // 
             // label2
             // 
@@ -254,12 +248,14 @@
             // 
             // btn_import
             // 
+            this.btn_import.Enabled = false;
             this.btn_import.Location = new System.Drawing.Point(314, 28);
             this.btn_import.Name = "btn_import";
             this.btn_import.Size = new System.Drawing.Size(75, 23);
             this.btn_import.TabIndex = 15;
             this.btn_import.Text = "导入";
             this.btn_import.UseVisualStyleBackColor = true;
+            this.btn_import.Click += new System.EventHandler(this.Btn_import_Click);
             // 
             // WeightCrawler
             // 
@@ -269,9 +265,8 @@
             this.Controls.Add(this.btn_import);
             this.Controls.Add(this.rb_output);
             this.Controls.Add(this.label2);
-            this.Controls.Add(this.button2);
-            this.Controls.Add(this.button1);
-            this.Controls.Add(this.txt_count);
+            this.Controls.Add(this.btn_export);
+            this.Controls.Add(this.tb_count);
             this.Controls.Add(this.progress_total);
             this.Controls.Add(this.btn_stop);
             this.Controls.Add(this.btn_start);
@@ -291,6 +286,7 @@
             this.MinimizeBox = false;
             this.Name = "WeightCrawler";
             this.Text = "WeightCrawler";
+            this.Load += new System.EventHandler(this.WeightCrawler_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -316,9 +312,8 @@
         private System.Windows.Forms.Button btn_start;
         private System.Windows.Forms.Button btn_stop;
         private System.Windows.Forms.ProgressBar progress_total;
-        private System.Windows.Forms.TextBox txt_count;
-        private System.Windows.Forms.Button button1;
-        private System.Windows.Forms.Button button2;
+        private System.Windows.Forms.TextBox tb_count;
+        private System.Windows.Forms.Button btn_export;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.RichTextBox rb_output;
         private System.Windows.Forms.Button btn_import;
