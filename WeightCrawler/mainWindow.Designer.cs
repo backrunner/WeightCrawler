@@ -165,8 +165,7 @@
             this.combo_api.FormattingEnabled = true;
             this.combo_api.Items.AddRange(new object[] {
             "自动",
-            "斗笠数据",
-            "老李API"});
+            "TenAPI"});
             this.combo_api.Location = new System.Drawing.Point(460, 29);
             this.combo_api.Name = "combo_api";
             this.combo_api.Size = new System.Drawing.Size(162, 20);
@@ -227,6 +226,7 @@
             this.btn_export.TabIndex = 11;
             this.btn_export.Text = "导出结果";
             this.btn_export.UseVisualStyleBackColor = true;
+            this.btn_export.Click += new System.EventHandler(this.Btn_export_Click);
             // 
             // label2
             // 

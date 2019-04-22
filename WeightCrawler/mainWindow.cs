@@ -30,6 +30,8 @@ namespace WeightCrawler
         public delegate void ImportFinishHandler();
         public delegate void WorkHandler();
         public delegate void WorkFinishedHandler();
+        public delegate void WeightUpdateHandler(string weight);
+        public delegate void CurrentProcessHandler(int processed);
 
         public delegate void LogHandler(string s);
         public delegate void ProgressBarHandler(int value);
@@ -40,6 +42,8 @@ namespace WeightCrawler
         public event ImportFinishHandler ImportFinished;
         public event DomainListHandler DomainListInsert;
         public event WorkFinishedHandler WorkFinished;
+        public event WeightUpdateHandler WeightUpdate;
+        public event CurrentProcessHandler CurrentProcessUpdate;
 
         //公共变量
         private string filePath;
@@ -65,14 +69,92 @@ namespace WeightCrawler
         //窗体初始化
         private void WeightCrawler_Load(object sender, EventArgs e)
         {
+            //bind events
             LogEvent += WeightCrawler_LogEvent;
             ProgressBarUpdate += WeightCrawler_ProgressBarUpdate;
             ImportFinished += WeightCrawler_ImportFinished;
             DomainListInsert += WeightCrawler_DomainListInsert;
             WorkFinished += WeightCrawler_WorkFinished;
+            WeightUpdate += WeightCrawler_WeightUpdate;
+            CurrentProcessUpdate += WeightCrawler_CurrentProcessUpdate;
             //设置默认值
             tb_thread.Text = "10";
             combo_api.SelectedIndex = 0;    //api -> 自动
+        }
+
+        private void WeightCrawler_CurrentProcessUpdate(int processed)
+        {
+            var update = new Action(() => {
+                tb_count.Text = processed.ToString();
+            });
+            this.Invoke(update);
+        }
+
+        private void UpdateCurrentProcess(int processed)
+        {
+            CurrentProcessUpdate?.Invoke(processed);
+        }
+
+        private void initStats()
+        {
+            for (var i = 0; i < 10; i++)
+            {
+                ListViewItem _item = new ListViewItem("权" + i.ToString());
+                _item.SubItems.Add("0");
+                lv_stats.Items.Add(_item);
+            }
+            ListViewItem item = new ListViewItem("权n");
+            item.SubItems.Add("0");
+            lv_stats.Items.Add(item);
+            item = new ListViewItem("错误");
+            item.SubItems.Add("0");
+            lv_stats.Items.Add(item);
+        }
+
+        private void WeightCrawler_WeightUpdate(string weight)
+        {
+            var update = new Action(() => {
+                switch (weight)
+                {
+                    case "0":
+                        lv_stats.Items[0].SubItems[1].Text = (int.Parse(lv_stats.Items[0].SubItems[1].Text)+1).ToString();
+                        break;
+                    case "1":
+                        lv_stats.Items[1].SubItems[1].Text = (int.Parse(lv_stats.Items[1].SubItems[1].Text) + 1).ToString();
+                        break;
+                    case "2":
+                        lv_stats.Items[2].SubItems[1].Text = (int.Parse(lv_stats.Items[2].SubItems[1].Text) + 1).ToString();
+                        break;
+                    case "3":
+                        lv_stats.Items[3].SubItems[1].Text = (int.Parse(lv_stats.Items[3].SubItems[1].Text) + 1).ToString();
+                        break;
+                    case "4":
+                        lv_stats.Items[4].SubItems[1].Text = (int.Parse(lv_stats.Items[4].SubItems[1].Text) + 1).ToString();
+                        break;
+                    case "5":
+                        lv_stats.Items[5].SubItems[1].Text = (int.Parse(lv_stats.Items[5].SubItems[1].Text) + 1).ToString();
+                        break;
+                    case "6":
+                        lv_stats.Items[6].SubItems[1].Text = (int.Parse(lv_stats.Items[6].SubItems[1].Text) + 1).ToString();
+                        break;
+                    case "7":
+                        lv_stats.Items[7].SubItems[1].Text = (int.Parse(lv_stats.Items[7].SubItems[1].Text) + 1).ToString();
+                        break;
+                    case "8":
+                        lv_stats.Items[8].SubItems[1].Text = (int.Parse(lv_stats.Items[8].SubItems[1].Text) + 1).ToString();
+                        break;
+                    case "9":
+                        lv_stats.Items[9].SubItems[1].Text = (int.Parse(lv_stats.Items[9].SubItems[1].Text) + 1).ToString();
+                        break;
+                    case "n":
+                        lv_stats.Items[10].SubItems[1].Text = (int.Parse(lv_stats.Items[10].SubItems[1].Text) + 1).ToString();
+                        break;
+                    case "error":
+                        lv_stats.Items[11].SubItems[1].Text = (int.Parse(lv_stats.Items[11].SubItems[1].Text) + 1).ToString();
+                        break;
+                }
+            });
+            this.Invoke(update);
         }
 
         private void WeightCrawler_WorkFinished()
@@ -155,6 +237,8 @@ namespace WeightCrawler
                 currentApi = 1;
             }
 
+            initStats();
+
             UpdateProgressBar(0);
 
             //开始工作
@@ -226,6 +310,8 @@ namespace WeightCrawler
                     InsertDomain(domain, weight);
                     processedCount++;
                     UpdateProgressBar(processedCount / domainsCount);
+                    UpdateWeight(weight);
+                    UpdateCurrentProcess((int)processedCount);
                     break;
             }
         }
@@ -310,6 +396,16 @@ namespace WeightCrawler
                 t = 100;
             }
             ProgressBarUpdate?.Invoke(t);
+        }
+        private void UpdateWeight(string weight)
+        {
+            WeightUpdate?.Invoke(weight);
+        }
+
+        private void Btn_export_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog fileDialog = new OpenFileDialog();
+
         }
     }
 
