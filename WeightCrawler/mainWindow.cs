@@ -32,6 +32,7 @@ namespace WeightCrawler
         public delegate void WorkFinishedHandler();
         public delegate void WeightUpdateHandler(string weight);
         public delegate void CurrentProcessHandler(int processed);
+        public delegate void ExportHandler(string path, ListView lv);
 
         public delegate void LogHandler(string s);
         public delegate void ProgressBarHandler(int value);
@@ -404,8 +405,38 @@ namespace WeightCrawler
 
         private void Btn_export_Click(object sender, EventArgs e)
         {
-            OpenFileDialog fileDialog = new OpenFileDialog();
-
+            SaveFileDialog dialog = new SaveFileDialog();
+            dialog.Filter = "逗号分隔符文件(*.csv)|*.csv";
+            dialog.FileName = "output_" + DateTime.Now.ToString("yyyyMMddHHmmss")+".csv";
+            dialog.RestoreDirectory = true;
+            if (dialog.ShowDialog() == DialogResult.OK)
+            {
+                var file = dialog.FileName;
+                UpdateProgressBar(0);
+                var count = lv_domains.Items.Count;
+                try
+                {
+                    using (FileStream fs = File.Open(file, FileMode.Create))
+                    {
+                        using (StreamWriter sw = new StreamWriter(fs))
+                        {
+                            //写入表头
+                            sw.WriteLine(Encoding.UTF8.GetString(Encoding.UTF8.GetBytes("域名,权重")));
+                            for (var i = 0; i < count; i++)
+                            {
+                                sw.WriteLine(Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(lv_domains.Items[i].SubItems[0].Text + "," + lv_domains.Items[i].SubItems[1].Text)));
+                                UpdateProgressBar((double)i / count);
+                            }
+                        }
+                    }
+                } catch (Exception ex)
+                {
+                    MessageBox.Show("导出时发生错误:\n" + ex.Message);
+                    return;
+                }
+                UpdateProgressBar(1);
+                MessageBox.Show("导出完成。");
+            }
         }
     }
 
