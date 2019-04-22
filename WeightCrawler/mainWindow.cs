@@ -28,7 +28,7 @@ namespace WeightCrawler
         public delegate int GetFileLengthHandler(string filePath);
         public delegate void ImportFileHandler(string filePath);
         public delegate void ImportFinishHandler();
-        public delegate void WorkHandler();
+        public delegate void WorkHandler(int sleep);
         public delegate void WorkFinishedHandler();
         public delegate void WeightUpdateHandler(string weight);
         public delegate void CurrentProcessHandler(int processed);
@@ -55,17 +55,20 @@ namespace WeightCrawler
 
         private string[] apis =
         {
-            "https://tenapi.cn/web/?url={domain}&type=json"
+            "https://tenapi.cn/web/?url={domain}&type=json",
+            "https://baidurank.aizhan.com/api/br?domain={domain}&style=text"
         };
 
         private int currentApi;
         private int threadCount;
+        private int threadSleep;
 
         private int domainsCount;
-        private double processedCount;
+        private static double processedCount { get; set; }
 
         //flags
-        private bool workStarted;
+        private bool workStarted { get; set; }
+        private bool threadPause { get; set; }
 
         //窗体初始化
         private void WeightCrawler_Load(object sender, EventArgs e)
@@ -80,7 +83,7 @@ namespace WeightCrawler
             CurrentProcessUpdate += WeightCrawler_CurrentProcessUpdate;
             //设置默认值
             tb_thread.Text = "10";
-            combo_api.SelectedIndex = 0;    //api -> 自动
+            combo_api.SelectedIndex = 1;    //默认API
         }
 
         private void WeightCrawler_CurrentProcessUpdate(int processed)
@@ -98,6 +101,7 @@ namespace WeightCrawler
 
         private void initStats()
         {
+            lv_stats.Items.Clear();
             for (var i = 0; i < 10; i++)
             {
                 ListViewItem _item = new ListViewItem("权" + i.ToString());
@@ -161,11 +165,13 @@ namespace WeightCrawler
         private void WeightCrawler_WorkFinished()
         {
             var update = new Action(() => {
-                workStarted = false;
-                btn_import.Enabled = true;
-                btn_export.Enabled = true;
+                UpdateProgressBar(1);
                 btn_start.Enabled = false;
                 btn_stop.Enabled = false;
+                btn_import.Enabled = true;
+                btn_export.Enabled = true;
+                combo_api.Enabled = true;
+                tb_thread.Enabled = true;
             });
             this.Invoke(update);
         }
@@ -197,6 +203,7 @@ namespace WeightCrawler
         {
             var update = new Action(() => {
                 rb_output.Text += s + "\r\n";
+                rb_output.ScrollToCaret();
             });
             this.Invoke(update);
         }
@@ -226,17 +233,13 @@ namespace WeightCrawler
             //获取数据
             currentApi = combo_api.SelectedIndex;
             threadCount = int.Parse(tb_thread.Text);
+            threadSleep = int.Parse(tb_sleep.Text);
+
             //设置flag
             workStarted = true;
 
             //设置变量
             processedCount = 0;
-
-            //api设置
-            if (currentApi == 0)
-            {
-                currentApi = 1;
-            }
 
             initStats();
 
@@ -244,76 +247,132 @@ namespace WeightCrawler
 
             //开始工作
             WorkHandler handler = new WorkHandler(StartWork);
-            handler.BeginInvoke(new AsyncCallback(WorkCallback), null);
+            handler.BeginInvoke(threadSleep, new AsyncCallback(WorkCallback), null);
         }
 
         private void Btn_stop_Click(object sender, EventArgs e)
         {
             workStarted = false;
+            threadPause = false;
             btn_start.Enabled = false;
             btn_stop.Enabled = false;
             btn_import.Enabled = true;
             btn_export.Enabled = true;
+            combo_api.Enabled = true;
+            tb_thread.Enabled = true;
         }
 
-        private void StartWork()
+        private void StartWork(int sleep)
         {
             Log("任务开始执行...");
             _domains = Queue.Synchronized(domains);
-            ThreadPool.SetMaxThreads(threadCount, threadCount);
+            if (threadCount >= 10)
+            {
+                ThreadPool.SetMinThreads(threadCount-5, threadCount-5);
+                ThreadPool.SetMaxThreads(threadCount, threadCount);
+            }
             for (var i=0;i<domains.Count;i++)
             {
-                if (!workStarted)
-                {
-                    return;
-                }
                 ThreadPool.QueueUserWorkItem(new WaitCallback(ThreadWork), null);
+                Thread.Sleep(sleep);
             }
         }
 
         private void WorkCallback(IAsyncResult result)
         {
-            while (processedCount < domainsCount);
+            while (processedCount + threadCount < domainsCount);
+            workStarted = false;
+            threadPause = false;
             Log("任务执行完成...");
             WorkFinished?.Invoke();
         }
 
         private void ThreadWork(object state)
         {
-            string domain = (string)_domains.Dequeue();
-            switch (currentApi)
+            if (!workStarted)
             {
-                case 1:
-                    var api = apis[0].Replace("{domain}", domain);
-                    string weight = "";
-                    HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(api);
-                    request.Method = "GET";
-                    request.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3763.0 Safari/537.36 Edg/75.0.131.0";
-                    request.Timeout = 5000;
-                    try
+                return;
+            }    
+            if (currentApi == 0)
+            {
+                string domain = (string)_domains.Dequeue();
+                var api = apis[0].Replace("{domain}", domain);
+                string weight = "";
+                HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(api);
+                request.Method = "GET";
+                request.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3763.0 Safari/537.36 Edg/75.0.131.0";
+                request.Timeout = 5000;
+                try
+                {
+                    WebResponse wr = request.GetResponse();
+                    StreamReader streamReader = new StreamReader(wr.GetResponseStream());
+                    string response = streamReader.ReadToEnd();
+                    JObject jo = JObject.Parse(response);
+                    if (jo["state"].ToString() == "200")
                     {
-                        WebResponse wr = request.GetResponse();
-                        StreamReader streamReader = new StreamReader(wr.GetResponseStream());
-                        string response = streamReader.ReadToEnd();
-                        JObject jo = JObject.Parse(response);
-                        if (jo["state"].ToString() == "200") {
-                            weight = jo["data"]["baidupc"].ToString();
-                        } else
-                        {
-                            weight = "error";
-                        }
+                        weight = jo["data"]["baidupc"].ToString();
                     }
-                    catch
+                    else
                     {
-                        //do nothing
                         weight = "error";
                     }
-                    InsertDomain(domain, weight);
-                    processedCount++;
+                }
+                catch
+                {
+                    //do nothing
+                    weight = "error";
+                }
+                InsertDomain(domain, weight);
+                processedCount++;
+                if (workStarted)
+                {
                     UpdateProgressBar(processedCount / domainsCount);
-                    UpdateWeight(weight);
-                    UpdateCurrentProcess((int)processedCount);
-                    break;
+                }
+                UpdateWeight(weight);
+                UpdateCurrentProcess((int)processedCount);
+            } else if (currentApi == 1)
+            {
+                while (threadPause)
+                {
+                    Thread.Sleep(15000);
+                    threadPause = false;
+                }
+                string domain = (string)_domains.Dequeue();
+                var api = apis[1].Replace("{domain}", domain);
+                string weight = "";
+                HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(api);
+                request.Method = "GET";
+                request.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3763.0 Safari/537.36 Edg/75.0.131.0";
+                request.Timeout = 5000;
+                try
+                {
+                    WebResponse wr = request.GetResponse();
+                    StreamReader streamReader = new StreamReader(wr.GetResponseStream());
+                    string response = streamReader.ReadToEnd();
+                    string pattern = "[0-9]+";
+                    string res = Regex.Match(response, pattern).Value;
+                    if (res.Length > 0)
+                    {
+                        weight = res;
+                    } else
+                    {
+                        weight = "error";
+                    }
+                }
+                catch
+                {
+                    //do nothing
+                    weight = "error";
+                }
+                InsertDomain(domain, weight);
+                processedCount++;
+                UpdateProgressBar(processedCount / domainsCount);
+                UpdateWeight(weight);
+                UpdateCurrentProcess((int)processedCount);
+                if ((processedCount+1)%(360-threadCount) == 0)
+                {
+                    threadPause = true;
+                }
             }
         }
 
@@ -424,12 +483,73 @@ namespace WeightCrawler
                             sw.WriteLine(Encoding.UTF8.GetString(Encoding.UTF8.GetBytes("域名,权重")));
                             for (var i = 0; i < count; i++)
                             {
-                                sw.WriteLine(Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(lv_domains.Items[i].SubItems[0].Text + "," + lv_domains.Items[i].SubItems[1].Text)));
+                                if (lv_domains.Items[i].SubItems[1].Text != "error") {
+                                    sw.WriteLine(Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(lv_domains.Items[i].SubItems[0].Text + "," + lv_domains.Items[i].SubItems[1].Text)));
+                                }
                                 UpdateProgressBar((double)i / count);
                             }
                         }
                     }
                 } catch (Exception ex)
+                {
+                    MessageBox.Show("导出时发生错误:\n" + ex.Message);
+                    return;
+                }
+                UpdateProgressBar(1);
+                MessageBox.Show("导出完成。");
+            }
+        }
+
+        private void Btn_retry_Click(object sender, EventArgs e)
+        {
+            var count = lv_domains.Items.Count;
+            Log("开始获取出错域名...");
+            UpdateProgressBar(0);
+            var errorcount = 0;
+            domains = Queue.Synchronized(new Queue());  //初始化domains
+            for (var i = 0; i < count; i++)
+            {
+                if (lv_domains.Items[i].SubItems[1].Text == "error")
+                {
+                    domains.Enqueue(lv_domains.Items[i].SubItems[0].Text);
+                    errorcount++;
+                }
+                UpdateProgressBar((double)i / count);
+            }
+            Log("已导入 " + errorcount + " 个出错的域名...");
+            btn_start.Enabled = true;
+        }
+
+        private void Btn_exporterror_Click(object sender, EventArgs e)
+        {
+            SaveFileDialog dialog = new SaveFileDialog();
+            dialog.Filter = "文本文件(*.txt)|*.txt";
+            dialog.FileName = "erroroutput_" + DateTime.Now.ToString("yyyyMMddHHmmss") + ".txt";
+            dialog.RestoreDirectory = true;
+            if (dialog.ShowDialog() == DialogResult.OK)
+            {
+                var file = dialog.FileName;
+                UpdateProgressBar(0);
+                var count = lv_domains.Items.Count;
+                try
+                {
+                    using (FileStream fs = File.Open(file, FileMode.Create))
+                    {
+                        using (StreamWriter sw = new StreamWriter(fs))
+                        {
+                            //写入表头
+                            for (var i = 0; i < count; i++)
+                            {
+                                if (lv_domains.Items[i].SubItems[1].Text == "error")
+                                {
+                                    sw.WriteLine(Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(lv_domains.Items[i].SubItems[0].Text)));
+                                }
+                                UpdateProgressBar((double)i / count);
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
                 {
                     MessageBox.Show("导出时发生错误:\n" + ex.Message);
                     return;

@@ -51,6 +51,10 @@
             this.label2 = new System.Windows.Forms.Label();
             this.rb_output = new System.Windows.Forms.RichTextBox();
             this.btn_import = new System.Windows.Forms.Button();
+            this.tb_sleep = new System.Windows.Forms.TextBox();
+            this.label3 = new System.Windows.Forms.Label();
+            this.btn_retry = new System.Windows.Forms.Button();
+            this.btn_exporterror = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // lbl_domainFile
@@ -130,7 +134,7 @@
             this.lv_stats.Location = new System.Drawing.Point(229, 72);
             this.lv_stats.Name = "lv_stats";
             this.lv_stats.Scrollable = false;
-            this.lv_stats.Size = new System.Drawing.Size(160, 329);
+            this.lv_stats.Size = new System.Drawing.Size(160, 271);
             this.lv_stats.TabIndex = 6;
             this.lv_stats.UseCompatibleStateImageBehavior = false;
             this.lv_stats.View = System.Windows.Forms.View.Details;
@@ -164,8 +168,8 @@
             // 
             this.combo_api.FormattingEnabled = true;
             this.combo_api.Items.AddRange(new object[] {
-            "自动",
-            "TenAPI"});
+            "TenAPI",
+            "AiZhan"});
             this.combo_api.Location = new System.Drawing.Point(460, 29);
             this.combo_api.Name = "combo_api";
             this.combo_api.Size = new System.Drawing.Size(162, 20);
@@ -216,6 +220,7 @@
             this.tb_count.ReadOnly = true;
             this.tb_count.Size = new System.Drawing.Size(65, 21);
             this.tb_count.TabIndex = 10;
+            this.tb_count.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             // 
             // btn_export
             // 
@@ -257,11 +262,53 @@
             this.btn_import.UseVisualStyleBackColor = true;
             this.btn_import.Click += new System.EventHandler(this.Btn_import_Click);
             // 
+            // tb_sleep
+            // 
+            this.tb_sleep.Location = new System.Drawing.Point(557, 101);
+            this.tb_sleep.Name = "tb_sleep";
+            this.tb_sleep.Size = new System.Drawing.Size(65, 21);
+            this.tb_sleep.TabIndex = 16;
+            this.tb_sleep.Text = "200";
+            this.tb_sleep.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.Location = new System.Drawing.Point(498, 105);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(53, 12);
+            this.label3.TabIndex = 17;
+            this.label3.Text = "提交间隔";
+            // 
+            // btn_retry
+            // 
+            this.btn_retry.Location = new System.Drawing.Point(229, 349);
+            this.btn_retry.Name = "btn_retry";
+            this.btn_retry.Size = new System.Drawing.Size(160, 23);
+            this.btn_retry.TabIndex = 18;
+            this.btn_retry.Text = "导入出错域名";
+            this.btn_retry.UseVisualStyleBackColor = true;
+            this.btn_retry.Click += new System.EventHandler(this.Btn_retry_Click);
+            // 
+            // btn_exporterror
+            // 
+            this.btn_exporterror.Location = new System.Drawing.Point(229, 378);
+            this.btn_exporterror.Name = "btn_exporterror";
+            this.btn_exporterror.Size = new System.Drawing.Size(160, 23);
+            this.btn_exporterror.TabIndex = 19;
+            this.btn_exporterror.Text = "导出出错域名到文件";
+            this.btn_exporterror.UseVisualStyleBackColor = true;
+            this.btn_exporterror.Click += new System.EventHandler(this.Btn_exporterror_Click);
+            // 
             // WeightCrawler
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(634, 438);
+            this.Controls.Add(this.btn_exporterror);
+            this.Controls.Add(this.btn_retry);
+            this.Controls.Add(this.label3);
+            this.Controls.Add(this.tb_sleep);
             this.Controls.Add(this.btn_import);
             this.Controls.Add(this.rb_output);
             this.Controls.Add(this.label2);
@@ -317,6 +364,10 @@
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.RichTextBox rb_output;
         private System.Windows.Forms.Button btn_import;
+        private System.Windows.Forms.TextBox tb_sleep;
+        private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.Button btn_retry;
+        private System.Windows.Forms.Button btn_exporterror;
     }
 }
 
