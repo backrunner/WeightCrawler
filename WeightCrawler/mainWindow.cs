@@ -36,10 +36,12 @@ namespace WeightCrawler
 
         public delegate void LogHandler(string s);
         public delegate void ProgressBarHandler(int value);
+        public delegate void ThreadSignalHandler(bool signal);
         public delegate void DomainListHandler(string domain, string weight);
 
         public event LogHandler LogEvent;
         public event ProgressBarHandler ProgressBarUpdate;
+        public event ThreadSignalHandler ThreadSignalUpdate;
         public event ImportFinishHandler ImportFinished;
         public event DomainListHandler DomainListInsert;
         public event WorkFinishedHandler WorkFinished;
@@ -70,12 +72,15 @@ namespace WeightCrawler
         private bool workStarted { get; set; }
         private bool threadPause { get; set; }
 
+        private int threadPauseTime { get; set; }
+
         //窗体初始化
         private void WeightCrawler_Load(object sender, EventArgs e)
         {
             //bind events
             LogEvent += WeightCrawler_LogEvent;
             ProgressBarUpdate += WeightCrawler_ProgressBarUpdate;
+            ThreadSignalUpdate += WeightCrawler_ThreadSignalUpdate;
             ImportFinished += WeightCrawler_ImportFinished;
             DomainListInsert += WeightCrawler_DomainListInsert;
             WorkFinished += WeightCrawler_WorkFinished;
@@ -84,6 +89,21 @@ namespace WeightCrawler
             //设置默认值
             tb_thread.Text = "10";
             combo_api.SelectedIndex = 1;    //默认API
+        }
+
+        private void WeightCrawler_ThreadSignalUpdate(bool signal)
+        {
+            var update = new Action(() =>
+            {
+                if (signal)
+                {
+                    tb_count.BackColor = Color.Crimson;
+                } else
+                {
+                    tb_count.BackColor = Color.LightGray;
+                }
+            });
+            this.Invoke(update);
         }
 
         private void WeightCrawler_CurrentProcessUpdate(int processed)
@@ -234,6 +254,7 @@ namespace WeightCrawler
             currentApi = combo_api.SelectedIndex;
             threadCount = int.Parse(tb_thread.Text);
             threadSleep = int.Parse(tb_sleep.Text);
+            threadPauseTime = int.Parse(txt_threadPause.Text);
 
             //设置flag
             workStarted = true;
@@ -334,8 +355,9 @@ namespace WeightCrawler
             {
                 while (threadPause)
                 {
-                    Thread.Sleep(15000);
+                    Thread.Sleep(threadPauseTime);
                     threadPause = false;
+                    SetThreadSignal(false);
                 }
                 string domain = (string)_domains.Dequeue();
                 var api = apis[1].Replace("{domain}", domain);
@@ -349,8 +371,8 @@ namespace WeightCrawler
                     WebResponse wr = request.GetResponse();
                     StreamReader streamReader = new StreamReader(wr.GetResponseStream());
                     string response = streamReader.ReadToEnd();
-                    string pattern = "[0-9]+";
-                    string res = Regex.Match(response, pattern).Value;
+                    string pattern = "[0-9]+</a>";
+                    string res = Regex.Match(response, pattern).Value.Replace("</a>","");
                     if (res.Length > 0)
                     {
                         weight = res;
@@ -366,12 +388,23 @@ namespace WeightCrawler
                 }
                 InsertDomain(domain, weight);
                 processedCount++;
-                UpdateProgressBar(processedCount / domainsCount);
+                if (workStarted)
+                {
+                    UpdateProgressBar(processedCount / domainsCount);
+                } else
+                {
+                    UpdateProgressBar(1);
+                }
                 UpdateWeight(weight);
                 UpdateCurrentProcess((int)processedCount);
                 if ((processedCount+1)%(360-threadCount) == 0)
                 {
-                    threadPause = true;
+                    if (threadPauseTime > 0)
+                    {
+                        threadPause = true;
+                        SetThreadSignal(true);
+                        Log("防止API限制，缓速中……");
+                    }
                 }
             }
         }
@@ -405,10 +438,11 @@ namespace WeightCrawler
                 double lines = 0;
                 while (s != null)
                 {
+                    s = s.Replace("&", "");
                     //处理文本
-                    string pattern = "[a-zA-Z0-9]+\\.(ac.cn|bj.cn|sh.cn|tj.cn|cq.cn|he.cn|sn.cn|sx.cn|nm.cn|ln.cn|jl.cn|hl.cn|js.cn|zj.cn|ah.cn|fj.cn|jx.cn|sd.cn|ha.cn|hb.cn|hn.cn|gd.cn|gx.cn|hi.cn|sc.cn|gz.cn|yn.cn|gs.cn|qh.cn|nx.cn|xj.cn|tw.cn|hk.cn|mo.cn|xz.cn" +
+                    string pattern = "(([a-z0-9A-Z--]|[u4e00-u9fa5])+\\.)?([a-z0-9A-Z--]|[u4e00-u9fa5])+\\.(ac.cn|bj.cn|sh.cn|tj.cn|cq.cn|he.cn|sn.cn|sx.cn|nm.cn|ln.cn|jl.cn|hl.cn|js.cn|zj.cn|ah.cn|fj.cn|jx.cn|sd.cn|ha.cn|hb.cn|hn.cn|gd.cn|gx.cn|hi.cn|sc.cn|gz.cn|yn.cn|gs.cn|qh.cn|nx.cn|xj.cn|tw.cn|hk.cn|mo.cn|xz.cn" +
                     "|com.cn|net.cn|org.cn|gov.cn|.com.hk|我爱你|在线|中国|网址|网店|中文网|公司|网络|集团" +
-                    "|com|cn|cc|org|net|xin|xyz|vip|shop|top|club|wang|fun|info|online|tech|store|site|ltd|ink|biz|group|link|work|pro|mobi|ren|kim|name|tv|red|app|space|cloud" +
+                    "|com|cn|cc|org|net|gov|xin|xyz|vip|shop|top|club|wang|fun|info|online|tech|store|site|ltd|ink|biz|group|link|work|pro|mobi|ren|kim|name|tv|red|app|space|cloud|int" +
                     "|cool|team|live|pub|company|zone|today|video|art|chat|gold|guru|show|life|love|email|fund|city|plus|design|social|center|world|auto|rip|ceo|sale|hk|io|gg|tm|gs|us|tw)\\b";
                     var match = Regex.Match(s, pattern);
                     if (match.Value.Length > 0)
@@ -456,6 +490,10 @@ namespace WeightCrawler
                 t = 100;
             }
             ProgressBarUpdate?.Invoke(t);
+        }
+        private void SetThreadSignal(bool signal)
+        {
+            ThreadSignalUpdate?.Invoke(signal);
         }
         private void UpdateWeight(string weight)
         {

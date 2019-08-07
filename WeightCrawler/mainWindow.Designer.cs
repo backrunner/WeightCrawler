@@ -55,6 +55,8 @@
             this.label3 = new System.Windows.Forms.Label();
             this.btn_retry = new System.Windows.Forms.Button();
             this.btn_exporterror = new System.Windows.Forms.Button();
+            this.txt_threadPause = new System.Windows.Forms.TextBox();
+            this.label4 = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // lbl_domainFile
@@ -172,7 +174,7 @@
             "AiZhan"});
             this.combo_api.Location = new System.Drawing.Point(460, 29);
             this.combo_api.Name = "combo_api";
-            this.combo_api.Size = new System.Drawing.Size(162, 20);
+            this.combo_api.Size = new System.Drawing.Size(91, 20);
             this.combo_api.TabIndex = 4;
             // 
             // lbl_api
@@ -215,6 +217,8 @@
             // 
             // tb_count
             // 
+            this.tb_count.BackColor = System.Drawing.Color.LightGray;
+            this.tb_count.ForeColor = System.Drawing.SystemColors.WindowFrame;
             this.tb_count.Location = new System.Drawing.Point(557, 71);
             this.tb_count.Name = "tb_count";
             this.tb_count.ReadOnly = true;
@@ -268,7 +272,7 @@
             this.tb_sleep.Name = "tb_sleep";
             this.tb_sleep.Size = new System.Drawing.Size(65, 21);
             this.tb_sleep.TabIndex = 16;
-            this.tb_sleep.Text = "200";
+            this.tb_sleep.Text = "50";
             this.tb_sleep.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             // 
             // label3
@@ -300,11 +304,31 @@
             this.btn_exporterror.UseVisualStyleBackColor = true;
             this.btn_exporterror.Click += new System.EventHandler(this.Btn_exporterror_Click);
             // 
+            // txt_threadPause
+            // 
+            this.txt_threadPause.Location = new System.Drawing.Point(557, 28);
+            this.txt_threadPause.Name = "txt_threadPause";
+            this.txt_threadPause.Size = new System.Drawing.Size(65, 21);
+            this.txt_threadPause.TabIndex = 21;
+            this.txt_threadPause.Text = "12000";
+            this.txt_threadPause.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Location = new System.Drawing.Point(555, 13);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(65, 12);
+            this.label4.TabIndex = 20;
+            this.label4.Text = "线程暂停：";
+            // 
             // WeightCrawler
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(634, 438);
+            this.Controls.Add(this.txt_threadPause);
+            this.Controls.Add(this.label4);
             this.Controls.Add(this.btn_exporterror);
             this.Controls.Add(this.btn_retry);
             this.Controls.Add(this.label3);
@@ -368,6 +392,8 @@
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.Button btn_retry;
         private System.Windows.Forms.Button btn_exporterror;
+        private System.Windows.Forms.TextBox txt_threadPause;
+        private System.Windows.Forms.Label label4;
     }
 }
 
