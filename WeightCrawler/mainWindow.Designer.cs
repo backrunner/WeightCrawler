@@ -92,6 +92,7 @@
             this.col_weight});
             this.lv_domains.GridLines = true;
             this.lv_domains.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.Nonclickable;
+            this.lv_domains.HideSelection = false;
             this.lv_domains.Location = new System.Drawing.Point(12, 71);
             this.lv_domains.Name = "lv_domains";
             this.lv_domains.Size = new System.Drawing.Size(200, 330);
@@ -133,6 +134,7 @@
             this.col_weightValue,
             this.col_weightCount});
             this.lv_stats.GridLines = true;
+            this.lv_stats.HideSelection = false;
             this.lv_stats.Location = new System.Drawing.Point(229, 72);
             this.lv_stats.Name = "lv_stats";
             this.lv_stats.Scrollable = false;
@@ -170,7 +172,6 @@
             // 
             this.combo_api.FormattingEnabled = true;
             this.combo_api.Items.AddRange(new object[] {
-            "TenAPI",
             "AiZhan"});
             this.combo_api.Location = new System.Drawing.Point(460, 29);
             this.combo_api.Name = "combo_api";

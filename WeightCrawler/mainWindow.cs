@@ -57,7 +57,6 @@ namespace WeightCrawler
 
         private string[] apis =
         {
-            "https://tenapi.cn/web/?url={domain}&type=json",
             "https://baidurank.aizhan.com/api/br?domain={domain}&style=text"
         };
 
@@ -74,6 +73,10 @@ namespace WeightCrawler
 
         private int threadPauseTime { get; set; }
 
+        private object _locker = new object();
+        private object _locker_threadSignal = new object();
+        private object _locker_count = new object();
+
         //窗体初始化
         private void WeightCrawler_Load(object sender, EventArgs e)
         {
@@ -88,7 +91,7 @@ namespace WeightCrawler
             CurrentProcessUpdate += WeightCrawler_CurrentProcessUpdate;
             //设置默认值
             tb_thread.Text = "10";
-            combo_api.SelectedIndex = 1;    //默认API
+            combo_api.SelectedIndex = 0;    //默认API
         }
 
         private void WeightCrawler_ThreadSignalUpdate(bool signal)
@@ -275,7 +278,7 @@ namespace WeightCrawler
         {
             workStarted = false;
             threadPause = false;
-            btn_start.Enabled = false;
+            btn_start.Enabled = true;
             btn_stop.Enabled = false;
             btn_import.Enabled = true;
             btn_export.Enabled = true;
@@ -287,21 +290,26 @@ namespace WeightCrawler
         {
             Log("任务开始执行...");
             _domains = Queue.Synchronized(domains);
-            if (threadCount >= 10)
+            ThreadPool.SetMinThreads(domains.Count, domains.Count);
+            ThreadPool.SetMaxThreads(threadCount, threadCount);
+            var tmr = new System.Timers.Timer();
+            tmr.Interval = sleep;
+            var i = 0;
+            tmr.Elapsed += (s, arg) =>
             {
-                ThreadPool.SetMinThreads(threadCount-5, threadCount-5);
-                ThreadPool.SetMaxThreads(threadCount, threadCount);
-            }
-            for (var i=0;i<domains.Count;i++)
-            {
+                i++;
+                if (i > domains.Count)
+                {
+                    tmr.Stop();
+                }
                 ThreadPool.QueueUserWorkItem(new WaitCallback(ThreadWork), null);
-                Thread.Sleep(sleep);
-            }
+            };
+            tmr.Start();
         }
 
         private void WorkCallback(IAsyncResult result)
         {
-            while (processedCount + threadCount < domainsCount);
+            while (processedCount < domainsCount);
             workStarted = false;
             threadPause = false;
             Log("任务执行完成...");
@@ -316,51 +324,18 @@ namespace WeightCrawler
             }    
             if (currentApi == 0)
             {
-                string domain = (string)_domains.Dequeue();
-                var api = apis[0].Replace("{domain}", domain);
-                string weight = "";
-                HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(api);
-                request.Method = "GET";
-                request.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3763.0 Safari/537.36 Edg/75.0.131.0";
-                request.Timeout = 5000;
-                try
-                {
-                    WebResponse wr = request.GetResponse();
-                    StreamReader streamReader = new StreamReader(wr.GetResponseStream());
-                    string response = streamReader.ReadToEnd();
-                    JObject jo = JObject.Parse(response);
-                    if (jo["state"].ToString() == "200")
-                    {
-                        weight = jo["data"]["baidupc"].ToString();
-                    }
-                    else
-                    {
-                        weight = "error";
-                    }
-                }
-                catch
-                {
-                    //do nothing
-                    weight = "error";
-                }
-                InsertDomain(domain, weight);
-                processedCount++;
-                if (workStarted)
-                {
-                    UpdateProgressBar(processedCount / domainsCount);
-                }
-                UpdateWeight(weight);
-                UpdateCurrentProcess((int)processedCount);
-            } else if (currentApi == 1)
-            {
                 while (threadPause)
                 {
                     Thread.Sleep(threadPauseTime);
-                    threadPause = false;
-                    SetThreadSignal(false);
+                    lock (_locker_threadSignal)
+                    {
+                        threadPause = false;
+                        SetThreadSignal(false);
+                    }
                 }
-                string domain = (string)_domains.Dequeue();
-                var api = apis[1].Replace("{domain}", domain);
+                string domain;
+                domain = (string)_domains.Dequeue();
+                var api = apis[0].Replace("{domain}", domain);
                 string weight = "";
                 HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(api);
                 request.Method = "GET";
@@ -387,7 +362,10 @@ namespace WeightCrawler
                     weight = "error";
                 }
                 InsertDomain(domain, weight);
-                processedCount++;
+                lock (_locker_count)
+                {
+                    processedCount++;
+                }
                 if (workStarted)
                 {
                     UpdateProgressBar(processedCount / domainsCount);
@@ -401,9 +379,12 @@ namespace WeightCrawler
                 {
                     if (threadPauseTime > 0)
                     {
-                        threadPause = true;
-                        SetThreadSignal(true);
-                        Log("防止API限制，缓速中……");
+                        lock (_locker_threadSignal)
+                        {
+                            threadPause = true;
+                            SetThreadSignal(true);
+                            Log("防止API限制，缓速中……");
+                        }
                     }
                 }
             }
